@@ -1,7 +1,7 @@
 {
   "nome": "Radar",
   "slogan": "O essencial do dia, em minutos",
-  "url": "https://radar-noticias.vercel.app",
+  "url": "https://radar-noticias-weld.vercel.app",
   "idioma": "pt-PT",
   "categorias": [
     { "slug": "nacional", "nome": "Nacional" },
