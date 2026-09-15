@@ -14,8 +14,10 @@ filtro:
   idade_maxima_horas: 12       # ignora itens mais antigos do que isto
 
 claude:
-  # Modelos e esforço. Trocar a triagem para "claude-haiku-4-5" reduz bastante o custo.
-  modelo_triagem: claude-opus-5
-  modelo_redacao: claude-opus-5
+  # Seleção e triagem: claude-haiku-4-5 (barato). Pesquisa e redação: claude-sonnet-5.
+  # Nos testes, o Haiku errou números na redação: não o usar para escrever sem revisão humana.
+  # O "esforco" só se aplica aos modelos Sonnet/Opus.
+  modelo_triagem: claude-haiku-4-5
+  modelo_redacao: claude-sonnet-5
   esforco_triagem: low
   esforco_redacao: medium

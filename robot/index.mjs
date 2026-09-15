@@ -7,7 +7,9 @@ import { criarSlug, publicar } from "./publicar.mjs";
 import { buscarImagem } from "./imagem.mjs";
 
 // --teste: não usa git nem guarda o estado; escreve no máximo 2 notícias em src/content/noticias.
+// --local: não usa git, mas escreve todas as notícias e guarda o estado (para gerar notícias no PC).
 const teste = process.argv.includes("--teste");
+const local = process.argv.includes("--local");
 const { filtro } = robot;
 
 const estado = carregarEstado();
@@ -90,6 +92,6 @@ for (const grupo of escolhidos) {
 }
 
 // 4. Publicação
-publicar(noticias, { teste });
+publicar(noticias, { teste: teste || local });
 if (!teste) guardarEstado(estado);
-console.log(`✅ ${noticias.length} notícia(s) ${teste ? "escritas localmente" : "enviadas"}`);
+console.log(`✅ ${noticias.length} notícia(s) ${teste || local ? "escritas localmente" : "enviadas"}`);
