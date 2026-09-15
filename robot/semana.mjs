@@ -93,6 +93,7 @@ for (const dia of dias) {
       }
       const fontesNoticia = pesquisa.fontes.map((f) => ({ nome: nomeDaFonte(f.url, f.nome), url: f.url }));
       const artigo = await redigir({
+        dia,
         categoria: historia.categoria,
         fontes: [{ fonte: fontesNoticia.map((f) => f.nome).join(", "), url: fontesNoticia[0].url, titulo: historia.titulo, texto: pesquisa.factos }],
       });

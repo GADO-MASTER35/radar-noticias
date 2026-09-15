@@ -20,7 +20,8 @@
 ## Como escrever
 - Português europeu (pt-PT): "equipa", "facto", "autocarro", "telemóvel", "golo".
 - Texto ORIGINAL. Nunca copies frases das fontes; reescreve os factos por palavras tuas.
-- Estilo pirâmide invertida: o mais importante primeiro. 3 a 5 parágrafos curtos.
+- Estilo pirâmide invertida: o mais importante primeiro. 3 a 5 parágrafos curtos (2 a 4 frases cada), 180 a 320 palavras no total.
+- Datas: a notícia conta o que aconteceu no dia em que é publicada. Factos de dias anteriores só como contexto e com a data.
 - Tom neutro e factual. Sem adjetivos sensacionalistas, sem opinião, sem clickbait.
 - Só factos que estejam nas fontes. Não inventes números, citações, nomes ou datas.
 - Citações diretas: no máximo uma, curta, atribuída ("disse X ao Público").
