@@ -1,0 +1,33 @@
+---
+import Base from "../layouts/Base.astro";
+import site from "../../config/site.json";
+import { parse } from "yaml";
+import fontesYaml from "../../config/fontes.yaml?raw";
+
+const fontes = (parse(fontesYaml).fontes as { nome: string; rss: string; ativa?: boolean }[]).filter((f) => f.ativa !== false);
+---
+
+<Base titulo="Como trabalhamos" descricao={`Como o ${site.nome} seleciona e escreve as notícias`}>
+  <div class="contentor"><article class="artigo artigo--pagina">
+    <header class="artigo__cabecalho">
+      <h1>Como trabalhamos</h1>
+      <p class="artigo__lead">
+        O {site.nome} reúne o essencial da atualidade a partir de órgãos de comunicação social portugueses e internacionais.
+      </p>
+    </header>
+    <div class="artigo__corpo">
+      <h2>O processo</h2>
+      <ol>
+        <li>A cada 15 minutos verificamos as publicações mais recentes das nossas fontes.</li>
+        <li>Um sistema de inteligência artificial (Claude, da Anthropic) avalia a relevância de cada notícia e agrupa as que falam do mesmo acontecimento.</li>
+        <li>As notícias mais relevantes são redigidas de raiz, com base apenas nos factos das fontes, em tom neutro.</li>
+        <li>Cada notícia é revista por uma pessoa antes de ser publicada.</li>
+        <li>Todas as notícias indicam as fontes, com ligação para o artigo original.</li>
+      </ol>
+      <h2>Fontes que acompanhamos</h2>
+      <ul>{fontes.map((f) => <li>{f.nome}</li>)}</ul>
+      <h2>Correções</h2>
+      <p>Encontrou um erro? Contacte-nos e corrigimos com a maior brevidade.</p>
+    </div>
+  </article></div>
+</Base>

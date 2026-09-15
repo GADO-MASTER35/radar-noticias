@@ -1,0 +1,72 @@
+# Sites de referência. O robot lê o feed RSS de cada um.
+# site: domínio usado pelo modo "semana" (npm run robot:semana) para ir buscar notícias antigas.
+# categoria: dica para o Claude (ele pode reclassificar).
+# Para desativar uma fonte sem a apagar: ativa: false
+# Todos os feeds abaixo foram testados em 15/09/2026.
+
+fontes:
+  # --- Generalistas ---
+  - nome: Público
+    rss: https://feeds.feedburner.com/PublicoRSS
+    site: publico.pt
+    categoria: nacional
+  - nome: Observador
+    rss: https://observador.pt/feed/
+    site: observador.pt
+    categoria: nacional
+  - nome: RTP Notícias
+    rss: https://www.rtp.pt/noticias/rss
+    site: rtp.pt
+    categoria: nacional
+  - nome: CNN Portugal
+    rss: https://cnnportugal.iol.pt/rss
+    site: cnnportugal.iol.pt
+    categoria: nacional
+  - nome: Correio da Manhã
+    rss: https://www.cmjornal.pt/rss
+    site: cmjornal.pt
+    categoria: nacional
+  - nome: Notícias ao Minuto
+    rss: https://www.noticiasaominuto.com/rss/ultima-hora
+    site: noticiasaominuto.com
+    categoria: nacional
+
+  # --- Mundo ---
+  - nome: Euronews
+    rss: https://pt.euronews.com/rss
+    site: pt.euronews.com
+    categoria: mundo
+  - nome: BBC News Brasil
+    rss: https://feeds.bbci.co.uk/portuguese/rss.xml
+    site: bbc.com/portuguese
+    categoria: mundo
+
+  # --- Economia ---
+  - nome: ECO
+    rss: https://eco.sapo.pt/feed/
+    site: eco.sapo.pt
+    categoria: economia
+  - nome: Jornal de Negócios
+    rss: https://www.jornaldenegocios.pt/rss
+    site: jornaldenegocios.pt
+    categoria: economia
+
+  # --- Desporto / Futebol ---
+  - nome: Record
+    rss: https://www.record.pt/rss
+    site: record.pt
+    categoria: desporto
+  - nome: Maisfutebol
+    rss: https://maisfutebol.iol.pt/rss
+    site: maisfutebol.iol.pt
+    categoria: desporto
+
+  # --- Tecnologia ---
+  - nome: Pplware
+    rss: https://pplware.sapo.pt/feed/
+    site: pplware.sapo.pt
+    categoria: tecnologia
+  - nome: SAPO Tek
+    rss: https://tek.sapo.pt/rss
+    site: tek.sapo.pt
+    categoria: tecnologia

@@ -1,0 +1,51 @@
+---
+import Base from "../../layouts/Base.astro";
+import Cartao from "../../components/Cartao.astro";
+import site from "../../../config/site.json";
+import { todasNoticias } from "../../lib/noticias";
+
+export async function getStaticPaths() {
+  const noticias = await todasNoticias();
+  return site.categorias.map((c) => ({
+    params: { categoria: c.slug },
+    props: { nome: c.nome, noticias: noticias.filter((n) => n.data.categoria === c.slug).slice(0, 60) },
+  }));
+}
+
+const { nome, noticias } = Astro.props;
+const { categoria } = Astro.params;
+const [principal, ...resto] = noticias;
+const destaques = resto.slice(0, 3);
+const feed = resto.slice(3);
+---
+
+<Base titulo={nome} descricao={`Últimas notícias de ${nome}`} categoriaAtiva={categoria}>
+  <header class="topo-seccao" data-categoria={categoria}>
+    <div class="contentor"><h1>{nome}</h1></div>
+  </header>
+
+  {
+    principal ? (
+      <>
+        <section class="contentor abertura abertura--seccao" data-categoria={categoria}>
+          <div class="abertura__principal">
+            <Cartao noticia={principal} variante="sobreposto" tamanho="grande" mostrarCategoria={false} prioridade />
+          </div>
+          {destaques.length > 0 && (
+            <div class="abertura__lista">
+              {destaques.map((n) => <Cartao noticia={n} variante="feed" mostrarCategoria={false} mostrarLead={false} />)}
+            </div>
+          )}
+        </section>
+        {feed.length > 0 && (
+          <section class="contentor seccao">
+            <h2 class="cabeca-seccao" data-categoria={categoria}><span>Mais notícias</span></h2>
+            <div class="feed feed--estreito">{feed.map((n) => <Cartao noticia={n} variante="feed" mostrarCategoria={false} />)}</div>
+          </section>
+        )}
+      </>
+    ) : (
+      <p class="contentor vazio">Ainda não há notícias nesta secção.</p>
+    )
+  }
+</Base>

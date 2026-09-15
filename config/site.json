@@ -1,0 +1,15 @@
+{
+  "nome": "Radar",
+  "slogan": "O essencial do dia, em minutos",
+  "url": "https://radar-noticias.vercel.app",
+  "idioma": "pt-PT",
+  "categorias": [
+    { "slug": "nacional", "nome": "Nacional" },
+    { "slug": "mundo", "nome": "Mundo" },
+    { "slug": "economia", "nome": "Economia" },
+    { "slug": "desporto", "nome": "Desporto" },
+    { "slug": "tecnologia", "nome": "Tecnologia" },
+    { "slug": "saude", "nome": "Saúde" },
+    { "slug": "cultura", "nome": "Cultura" }
+  ]
+}

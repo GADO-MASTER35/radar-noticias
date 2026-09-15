@@ -1,0 +1,28 @@
+---
+import { nomeCategoria, type Noticia } from "../lib/noticias";
+
+interface Props {
+  noticia: Noticia;
+  miniatura?: boolean;
+  prioridade?: boolean;
+}
+
+const { noticia, miniatura = false, prioridade = false } = Astro.props;
+const { imagem, categoria } = noticia.data;
+---
+
+<div class="imagem" data-categoria={categoria}>
+  {
+    imagem ? (
+      <img
+        src={miniatura ? imagem.miniatura : imagem.url}
+        alt=""
+        loading={prioridade ? "eager" : "lazy"}
+        fetchpriority={prioridade ? "high" : undefined}
+        decoding="async"
+      />
+    ) : (
+      <span class="imagem__vazia" aria-hidden="true">{nomeCategoria(categoria)}</span>
+    )
+  }
+</div>

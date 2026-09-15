@@ -1,0 +1,60 @@
+name: Robot de notícias
+
+on:
+  schedule:
+    - cron: "*/15 * * * *" # a cada 15 min (o GitHub pode atrasar alguns minutos)
+  workflow_dispatch: # botão "Run workflow" para correr à mão
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: robot
+  cancel-in-progress: false
+
+jobs:
+  robot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Configurar git
+        run: |
+          git config --global user.name "Robot Notícias"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # O estado (links já vistos) vive no branch "robot-estado" para não disparar deploys no main.
+      - name: Carregar estado
+        run: |
+          if git ls-remote --exit-code --heads origin robot-estado > /dev/null; then
+            git worktree add robot-estado origin/robot-estado
+          else
+            git worktree add --orphan -b robot-estado robot-estado
+          fi
+
+      - name: Correr robot
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: npm run robot
+
+      - name: Guardar estado
+        if: always()
+        working-directory: robot-estado
+        run: |
+          git add -A
+          git diff --cached --quiet || git commit -m "Estado do robot"
+          git rev-parse HEAD > /dev/null 2>&1 || exit 0
+          git push origin HEAD:robot-estado

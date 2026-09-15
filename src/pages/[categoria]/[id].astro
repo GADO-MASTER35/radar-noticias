@@ -1,0 +1,123 @@
+---
+import { render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Cartao from "../../components/Cartao.astro";
+import site from "../../../config/site.json";
+import { dataLonga, nomeCategoria, slugTag, todasNoticias, urlNoticia } from "../../lib/noticias";
+
+export async function getStaticPaths() {
+  const noticias = await todasNoticias();
+  return noticias.map((noticia) => ({
+    params: { categoria: noticia.data.categoria, id: noticia.id },
+    props: {
+      noticia,
+      relacionadas: noticias.filter((n) => n.id !== noticia.id && n.data.categoria === noticia.data.categoria).slice(0, 4),
+      recentes: noticias.filter((n) => n.id !== noticia.id).slice(0, 6),
+    },
+  }));
+}
+
+const { noticia, relacionadas, recentes } = Astro.props;
+const { titulo, lead, categoria, data, fontes, tags, imagem } = noticia.data;
+const { Content } = await render(noticia);
+
+const endereco = new URL(urlNoticia(noticia), Astro.site).href;
+const partilha = [
+  { nome: "WhatsApp", url: `https://wa.me/?text=${encodeURIComponent(`${titulo} ${endereco}`)}` },
+  { nome: "Facebook", url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(endereco)}` },
+  { nome: "X", url: `https://x.com/intent/post?text=${encodeURIComponent(titulo)}&url=${encodeURIComponent(endereco)}` },
+];
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  headline: titulo,
+  description: lead,
+  datePublished: data.toISOString(),
+  articleSection: nomeCategoria(categoria),
+  keywords: tags.join(", "),
+  ...(imagem && { image: [imagem.url] }),
+  publisher: { "@type": "Organization", name: site.nome },
+  isBasedOn: fontes.map((f) => f.url),
+};
+---
+
+<Base titulo={titulo} descricao={lead} categoriaAtiva={categoria} imagem={imagem?.url}>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+  <div class="contentor pagina-artigo">
+    <article class="artigo" data-categoria={categoria}>
+      <header class="artigo__cabecalho">
+        <a class="chapeu" href={`/${categoria}/`}>{nomeCategoria(categoria)}</a>
+        <h1>{titulo}</h1>
+        <p class="artigo__lead">{lead}</p>
+        <div class="artigo__meta">
+          <p>
+            Por <strong>Redação {site.nome}</strong><br />
+            <time datetime={data.toISOString()}>{dataLonga(data)}</time>
+          </p>
+          <ul class="partilha" aria-label="Partilhar">
+            {partilha.map((p) => (
+              <li><a href={p.url} target="_blank" rel="noopener" data-rede={p.nome}>{p.nome}</a></li>
+            ))}
+          </ul>
+        </div>
+      </header>
+
+      {
+        imagem && (
+          <figure class="artigo__imagem">
+            <img src={imagem.url} alt="" fetchpriority="high" />
+            <figcaption>
+              Imagem ilustrativa · Foto: <a href={imagem.link} rel="noopener" target="_blank">{imagem.credito} / Pexels</a>
+            </figcaption>
+          </figure>
+        )
+      }
+
+      <div class="artigo__corpo">
+        <Content />
+      </div>
+
+      <aside class="fontes">
+        <h2>Fontes desta notícia</h2>
+        <ul>
+          {fontes.map((f) => (
+            <li><a href={f.url} rel="noopener" target="_blank">{f.nome} ↗</a></li>
+          ))}
+        </ul>
+        <p>Notícia redigida com apoio de inteligência artificial a partir das fontes acima. <a href="/sobre/">Saber mais</a></p>
+      </aside>
+
+      {
+        tags.length > 0 && (
+          <ul class="tags">
+            {tags.map((t) => (
+              <li><a href={`/tag/${slugTag(t)}/`}>{t}</a></li>
+            ))}
+          </ul>
+        )
+      }
+    </article>
+
+    <aside class="lateral lateral--artigo">
+      <section class="caixa">
+        <h2 class="cabeca-seccao"><span>Mais recentes</span></h2>
+        <div class="feed feed--compacto">
+          {recentes.map((n) => <Cartao noticia={n} variante="feed" mostrarLead={false} />)}
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  {
+    relacionadas.length > 0 && (
+      <section class="contentor seccao" data-categoria={categoria}>
+        <h2 class="cabeca-seccao"><span>Veja também em {nomeCategoria(categoria)}</span></h2>
+        <div class="grelha">
+          {relacionadas.map((n) => <Cartao noticia={n} mostrarCategoria={false} mostrarLead={false} />)}
+        </div>
+      </section>
+    )
+  }
+</Base>

@@ -1,0 +1,110 @@
+---
+import Base from "../layouts/Base.astro";
+import Cartao from "../components/Cartao.astro";
+import site from "../../config/site.json";
+import { escolherManchete, maisImportantes, todasNoticias, urlNoticia } from "../lib/noticias";
+
+const noticias = await todasNoticias();
+const manchete = escolherManchete(noticias);
+
+// Cada notícia aparece uma só vez no topo da página.
+const usadas = new Set(manchete ? [manchete.id] : []);
+const tirar = (lista: typeof noticias, n: number) => {
+  const escolhidas = lista.filter((x) => !usadas.has(x.id)).slice(0, n);
+  escolhidas.forEach((x) => usadas.add(x.id));
+  return escolhidas;
+};
+
+const laterais = tirar(maisImportantes(noticias), 2);
+const faixa = tirar(noticias, 4);
+const feed = tirar(noticias, 10);
+const topo = maisImportantes(noticias).slice(0, 5);
+const desporto = noticias.filter((n) => n.data.categoria === "desporto").slice(0, 4);
+const seccoes = site.categorias
+  .filter((c) => c.slug !== "desporto")
+  .map((c) => ({ ...c, noticias: noticias.filter((n) => n.data.categoria === c.slug).slice(0, 4) }))
+  .filter((s) => s.noticias.length);
+---
+
+<Base>
+  {
+    !manchete ? (
+      <section class="contentor vazio">
+        <h1>Ainda não há notícias publicadas</h1>
+        <p>O robot verifica as fontes a cada 15 minutos. As primeiras notícias aparecem aqui assim que forem aprovadas.</p>
+      </section>
+    ) : (
+      <>
+        <section class="contentor abertura" aria-label="Destaques">
+          <div class="abertura__principal">
+            <Cartao noticia={manchete} variante="sobreposto" tamanho="grande" prioridade />
+          </div>
+          {laterais.length > 0 && (
+            <div class="abertura__lateral">
+              {laterais.map((n) => <Cartao noticia={n} variante="sobreposto" mostrarLead={false} prioridade />)}
+            </div>
+          )}
+        </section>
+
+        {faixa.length > 0 && (
+          <section class="contentor faixa" aria-label="Mais destaques">
+            {faixa.map((n) => <Cartao noticia={n} mostrarLead={false} />)}
+          </section>
+        )}
+
+        <div class="contentor colunas">
+          <section aria-labelledby="titulo-ultimas">
+            <h2 class="cabeca-seccao" id="titulo-ultimas"><span>Últimas notícias</span></h2>
+            {feed.length ? (
+              <div class="feed">{feed.map((n) => <Cartao noticia={n} variante="feed" />)}</div>
+            ) : (
+              <p class="nota">Sem mais notícias por agora.</p>
+            )}
+          </section>
+
+          <aside class="lateral">
+            <section class="caixa" aria-labelledby="titulo-top">
+              <h2 class="cabeca-seccao" id="titulo-top"><span>Em destaque hoje</span></h2>
+              <ol class="ranking">
+                {topo.map((n) => (
+                  <li data-categoria={n.data.categoria}>
+                    <a href={urlNoticia(n)}>{n.data.titulo}</a>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </aside>
+        </div>
+
+        {desporto.length > 0 && (
+          <section class="banda banda--desporto" data-categoria="desporto" aria-labelledby="titulo-desporto">
+            <div class="contentor">
+              <h2 class="cabeca-seccao cabeca-seccao--invertida" id="titulo-desporto">
+                <span>⚽ Desporto</span>
+                <a href="/desporto/">Ver tudo</a>
+              </h2>
+              <div class="banda__grelha">
+                <Cartao noticia={desporto[0]} variante="sobreposto" tamanho="grande" mostrarCategoria={false} />
+                <div class="banda__lista">
+                  {desporto.slice(1).map((n) => <Cartao noticia={n} variante="feed" mostrarCategoria={false} mostrarLead={false} />)}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {seccoes.map((s) => (
+          <section class="contentor seccao" data-categoria={s.slug} aria-labelledby={`titulo-${s.slug}`}>
+            <h2 class="cabeca-seccao" id={`titulo-${s.slug}`}>
+              <span>{s.nome}</span>
+              <a href={`/${s.slug}/`}>Ver tudo</a>
+            </h2>
+            <div class="grelha">
+              {s.noticias.map((n) => <Cartao noticia={n} mostrarCategoria={false} mostrarLead={false} />)}
+            </div>
+          </section>
+        ))}
+      </>
+    )
+  }
+</Base>

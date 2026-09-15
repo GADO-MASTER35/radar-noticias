@@ -1,0 +1,40 @@
+---
+import Imagem from "./Imagem.astro";
+import { nomeCategoria, urlNoticia, type Noticia } from "../lib/noticias";
+
+interface Props {
+  noticia: Noticia;
+  // sobreposto: foto com título por cima (manchetes) · vertical: foto em cima · feed: foto ao lado · texto: sem foto
+  variante?: "sobreposto" | "vertical" | "feed" | "texto";
+  tamanho?: "grande" | "medio";
+  mostrarCategoria?: boolean;
+  mostrarLead?: boolean;
+  prioridade?: boolean;
+}
+
+const {
+  noticia,
+  variante = "vertical",
+  tamanho = "medio",
+  mostrarCategoria = true,
+  mostrarLead = variante !== "texto",
+  prioridade = false,
+} = Astro.props;
+const { titulo, lead, categoria, data } = noticia.data;
+const Titulo = tamanho === "grande" ? "h2" : "h3";
+---
+
+<article class={`cartao cartao--${variante} cartao--${tamanho}`} data-categoria={categoria}>
+  {variante !== "texto" && <Imagem noticia={noticia} miniatura={tamanho !== "grande" && variante !== "sobreposto"} prioridade={prioridade} />}
+  <div class="cartao__texto">
+    {mostrarCategoria && <span class="chapeu">{nomeCategoria(categoria)}</span>}
+    <Titulo class="cartao__titulo">
+      <a href={urlNoticia(noticia)}>{titulo}</a>
+    </Titulo>
+    {mostrarLead && <p class="cartao__lead">{lead}</p>}
+    <p class="cartao__meta">
+      <time datetime={data.toISOString()} data-relativo></time>
+      {mostrarCategoria && variante === "feed" && <span>em {nomeCategoria(categoria)}</span>}
+    </p>
+  </div>
+</article>

@@ -1,0 +1,31 @@
+---
+import Base from "../../layouts/Base.astro";
+import Cartao from "../../components/Cartao.astro";
+import { slugTag, todasNoticias } from "../../lib/noticias";
+
+export async function getStaticPaths() {
+  const noticias = await todasNoticias();
+  const porTag = new Map<string, { nome: string; noticias: typeof noticias }>();
+  for (const n of noticias) {
+    for (const tag of n.data.tags) {
+      const slug = slugTag(tag);
+      if (!slug) continue;
+      const grupo = porTag.get(slug) ?? { nome: tag, noticias: [] };
+      grupo.noticias.push(n);
+      porTag.set(slug, grupo);
+    }
+  }
+  return [...porTag].map(([tag, grupo]) => ({ params: { tag }, props: grupo }));
+}
+
+const { nome, noticias } = Astro.props;
+---
+
+<Base titulo={nome} descricao={`Notícias sobre ${nome}`}>
+  <header class="topo-seccao">
+    <div class="contentor"><p class="topo-seccao__rotulo">Tema</p><h1>{nome}</h1></div>
+  </header>
+  <section class="contentor seccao">
+    <div class="feed feed--estreito">{noticias.map((n) => <Cartao noticia={n} variante="feed" />)}</div>
+  </section>
+</Base>

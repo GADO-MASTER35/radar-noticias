@@ -1,0 +1,25 @@
+{
+  "name": "noticias",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "robot": "node --env-file-if-exists=.env robot/index.mjs",
+    "robot:teste": "node --env-file-if-exists=.env robot/index.mjs --teste",
+    "robot:semana": "node --env-file-if-exists=.env robot/semana.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
+    "@mozilla/readability": "^0.6.0",
+    "astro": "^7.3.2",
+    "linkedom": "^0.18.13",
+    "rss-parser": "^3.13.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  }
+}

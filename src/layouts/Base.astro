@@ -1,0 +1,158 @@
+---
+import site from "../../config/site.json";
+import { todasNoticias, urlNoticia } from "../lib/noticias";
+import "../styles/global.css";
+
+interface Props {
+  titulo?: string;
+  descricao?: string;
+  categoriaAtiva?: string;
+  imagem?: string;
+}
+
+const { titulo, descricao = site.slogan, categoriaAtiva, imagem } = Astro.props;
+const tituloPagina = titulo ? `${titulo} · ${site.nome}` : `${site.nome} — ${site.slogan}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ultimaHora = (await todasNoticias()).slice(0, 6);
+const inicio = !categoriaAtiva && Astro.url.pathname === "/";
+---
+
+<!doctype html>
+<html lang={site.idioma}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{tituloPagina}</title>
+    <meta name="description" content={descricao} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="alternate" type="application/rss+xml" title={site.nome} href="/rss.xml" />
+    <meta property="og:type" content={titulo ? "article" : "website"} />
+    <meta property="og:title" content={titulo ?? site.nome} />
+    <meta property="og:description" content={descricao} />
+    <meta property="og:site_name" content={site.nome} />
+    <meta property="og:locale" content="pt_PT" />
+    {imagem && <meta property="og:image" content={imagem} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#003b4a" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap"
+      rel="stylesheet"
+    />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="saltar" href="#conteudo">Saltar para o conteúdo</a>
+
+    <header class="cabecalho">
+      <div class="barra-marca">
+        <div class="contentor barra-marca__interior">
+          <details class="menu">
+            <summary aria-label="Menu">
+              <span class="menu__icone" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="menu__texto">Menu</span>
+            </summary>
+            <nav class="menu__painel" aria-label="Menu principal">
+              <a href="/">Início</a>
+              {site.categorias.map((c) => <a href={`/${c.slug}/`} data-categoria={c.slug}>{c.nome}</a>)}
+              <a href="/sobre/">Como trabalhamos</a>
+            </nav>
+          </details>
+
+          <a href="/" class="logo" aria-label={`${site.nome}, página inicial`}>
+            <span class="logo__simbolo" aria-hidden="true"></span>
+            {site.nome.toLowerCase()}
+          </a>
+
+          <span class="barra-marca__data" id="data-hoje"></span>
+        </div>
+      </div>
+
+      <nav class="seccoes" aria-label="Secções">
+        <ul class="contentor seccoes__lista">
+          <li><a href="/" aria-current={inicio ? "page" : undefined}>Início</a></li>
+          {
+            site.categorias.map((c) => (
+              <li data-categoria={c.slug}>
+                <a href={`/${c.slug}/`} aria-current={categoriaAtiva === c.slug ? "page" : undefined}>{c.nome}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      {
+        ultimaHora.length > 0 && (
+          <div class="ultima-hora">
+            <div class="contentor ultima-hora__interior">
+              <span class="ultima-hora__rotulo">Última hora</span>
+              <div class="ultima-hora__faixa">
+                <ul class="ultima-hora__lista">
+                  {[...ultimaHora, ...ultimaHora].map((n, i) => (
+                    <li aria-hidden={i >= ultimaHora.length ? "true" : undefined}>
+                      <time datetime={n.data.data.toISOString()} data-relativo />
+                      <a href={urlNoticia(n)} tabindex={i >= ultimaHora.length ? -1 : undefined}>{n.data.titulo}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    </header>
+
+    <main id="conteudo">
+      <slot />
+    </main>
+
+    <footer class="rodape">
+      <div class="contentor">
+        <div class="rodape__topo">
+          <a href="/" class="logo logo--rodape"><span class="logo__simbolo" aria-hidden="true"></span>{site.nome.toLowerCase()}</a>
+          <p>{site.slogan}</p>
+        </div>
+        <nav class="rodape__seccoes" aria-label="Secções no rodapé">
+          {site.categorias.map((c) => <a href={`/${c.slug}/`}>{c.nome}</a>)}
+          <a href="/sobre/">Como trabalhamos</a>
+          <a href="/rss.xml">RSS</a>
+        </nav>
+        <p class="rodape__nota">
+          As notícias do {site.nome} são redigidas com apoio de inteligência artificial a partir de órgãos de
+          comunicação social, sempre identificados e com ligação para o original. Imagens ilustrativas cedidas por fotógrafos
+          do <a href="https://www.pexels.com" rel="noopener">Pexels</a>.
+        </p>
+        <p class="rodape__copy">© {new Date().getFullYear()} {site.nome}</p>
+      </div>
+    </footer>
+
+    <script is:inline>
+      (() => {
+        const fuso = { timeZone: "Europe/Lisbon" };
+        const hoje = document.getElementById("data-hoje");
+        if (hoje) {
+          hoje.textContent = new Intl.DateTimeFormat("pt-PT", { ...fuso, weekday: "long", day: "numeric", month: "long" })
+            .format(new Date())
+            .replace(/^./, (l) => l.toUpperCase());
+        }
+        // "há 5 min", "há 3 h"... como nos grandes portais.
+        const relativo = (data) => {
+          const min = Math.round((Date.now() - data) / 60000);
+          if (min < 1) return "agora";
+          if (min < 60) return `há ${min} min`;
+          const h = Math.round(min / 60);
+          if (h < 24) return `há ${h} h`;
+          return new Intl.DateTimeFormat("pt-PT", { ...fuso, day: "numeric", month: "short" }).format(data);
+        };
+        const atualizar = () =>
+          document.querySelectorAll("time[data-relativo]").forEach((t) => {
+            t.textContent = relativo(new Date(t.dateTime));
+          });
+        atualizar();
+        setInterval(atualizar, 60000);
+      })();
+    </script>
+  </body>
+</html>

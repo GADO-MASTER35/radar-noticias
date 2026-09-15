@@ -1,0 +1,21 @@
+# Comportamento do robot
+
+publicacao:
+  # revisao    -> cada notícia abre um Pull Request no GitHub; aprovas com "Merge"
+  # automatico -> publica logo no site
+  # misto      -> categorias em "automatico_categorias" publicam logo, o resto vai para revisão
+  modo: revisao
+  automatico_categorias: [desporto, cultura, tecnologia]
+
+filtro:
+  importancia_minima: 6        # 1 a 10 — só escreve notícias com nota >= a esta
+  max_artigos_por_execucao: 8  # limite de custo por execução (a cada ~15 min)
+  max_itens_por_fonte: 15      # só olha para os N itens mais recentes de cada feed
+  idade_maxima_horas: 12       # ignora itens mais antigos do que isto
+
+claude:
+  # Modelos e esforço. Trocar a triagem para "claude-haiku-4-5" reduz bastante o custo.
+  modelo_triagem: claude-opus-5
+  modelo_redacao: claude-opus-5
+  esforco_triagem: low
+  esforco_redacao: medium
