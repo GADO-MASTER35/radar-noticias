@@ -18,6 +18,7 @@ const argumento = (nome, padrao) => {
 };
 const DIAS = argumento("dias", 7);
 const POR_DIA = argumento("por-dia", 8);
+const PARALELO = argumento("paralelo", 4);
 const SO_LISTAR = process.argv.includes("--so-listar");
 const DIA_UNICO = process.argv.includes("--dia") ? process.argv[process.argv.indexOf("--dia") + 1] : null;
 
@@ -56,6 +57,7 @@ const estado = carregarEstado();
 const fotosUsadas = new Set();
 const jaEscolhidas = Object.values(progresso).flatMap((p) => p.historias?.map((h) => h.titulo) ?? []);
 let escritas = 0;
+const fila = [];
 
 for (const dia of dias) {
   progresso[dia] ??= {};
@@ -72,7 +74,7 @@ for (const dia of dias) {
     }
     if (!itens.length) continue;
 
-    const selecao = await selecionarDia({ dia, itens, quantidade: emFalta, jaEscolhidas: jaEscolhidas.slice(-80) });
+    const selecao = await selecionarDia({ dia, itens, quantidade: emFalta, jaEscolhidas });
     const porId = new Map(itens.map((i) => [i.id, i]));
     registo.historias ??= [];
     registo.historias.push(...selecao.map((h) => ({
@@ -87,56 +89,69 @@ for (const dia of dias) {
     console.log(`\n📅 ${dia}: seleção já feita (${registo.historias.length} acontecimentos)`);
   }
 
-  // 2. Pesquisa + redação de cada acontecimento
+  // As histórias por escrever deste dia entram na fila (processada em paralelo no fim).
   for (const historia of registo.historias) {
-    if (historia.feita || !historia.manchetes.length) continue;
-    try {
-      const pesquisa = await pesquisar({ dia, historia: historia.titulo, manchetes: historia.manchetes, dominios });
-      if (!pesquisa) {
-        console.warn(`   ⚠ Sem artigos originais legíveis: ${historia.titulo}`);
-        historia.feita = "sem-fontes";
-        guardarProgresso();
-        continue;
-      }
-      const fontesNoticia = pesquisa.fontes.map((f) => ({ nome: nomeDaFonte(f.url, f.nome), url: f.url }));
-      const artigo = await redigir({
-        dia,
-        categoria: historia.categoria,
-        fontes: [{ fonte: fontesNoticia.map((f) => f.nome).join(", "), url: fontesNoticia[0].url, titulo: historia.titulo, texto: pesquisa.factos }],
-      });
-      if (!artigo) {
-        historia.feita = "recusada";
-        guardarProgresso();
-        continue;
-      }
-
-      // Hora original: a manchete mais antiga sobre o acontecimento.
-      const data = historia.manchetes.map((m) => m.data).sort()[0];
-      const imagem = await buscarImagem(artigo.pesquisa_imagem, fotosUsadas);
-      const noticia = {
-        id: criarSlug(artigo.titulo, data),
-        titulo: artigo.titulo,
-        lead: artigo.lead,
-        categoria: historia.categoria,
-        tags: artigo.tags,
-        importancia: historia.importancia,
-        destaque: historia.importancia >= 9,
-        data,
-        fontes: fontesNoticia,
-        ...(imagem && { imagem }),
-        corpo: artigo.corpo,
-      };
-      escreverFicheiro(noticia);
-      estado.historias.push({ id: noticia.id, titulo: noticia.titulo, categoria: noticia.categoria, data: noticia.data });
-      historia.feita = noticia.id;
-      guardarProgresso();
-      escritas++;
-      console.log(`   ✍  ${noticia.titulo}`);
-    } catch (erro) {
-      console.warn(`   ⚠ Erro em "${historia.titulo}": ${erro.message}`);
-    }
+    if (!historia.feita && historia.manchetes.length) fila.push({ dia, historia });
   }
 }
+
+// 2. Pesquisa + redação, várias histórias ao mesmo tempo.
+async function processar({ dia, historia }) {
+  try {
+    const pesquisa = await pesquisar({ dia, historia: historia.titulo, manchetes: historia.manchetes, dominios });
+    if (!pesquisa) {
+      console.warn(`   ⚠ Sem artigos originais legíveis: ${historia.titulo}`);
+      historia.feita = "sem-fontes";
+      guardarProgresso();
+      return;
+    }
+    const fontesNoticia = pesquisa.fontes.map((f) => ({ nome: nomeDaFonte(f.url, f.nome), url: f.url }));
+    const artigo = await redigir({
+      dia,
+      categoria: historia.categoria,
+      fontes: [{ fonte: fontesNoticia.map((f) => f.nome).join(", "), url: fontesNoticia[0].url, titulo: historia.titulo, texto: pesquisa.factos }],
+    });
+    if (!artigo) {
+      historia.feita = "recusada";
+      guardarProgresso();
+      return;
+    }
+
+    // Hora original: a manchete mais antiga sobre o acontecimento.
+    const data = historia.manchetes.map((m) => m.data).sort()[0];
+    const imagem = await buscarImagem(artigo.pesquisa_imagem, fotosUsadas);
+    const noticia = {
+      id: criarSlug(artigo.titulo, data),
+      titulo: artigo.titulo,
+      lead: artigo.lead,
+      categoria: historia.categoria,
+      tags: artigo.tags,
+      importancia: historia.importancia,
+      destaque: historia.importancia >= 9,
+      data,
+      fontes: fontesNoticia,
+      ...(imagem && { imagem }),
+      corpo: artigo.corpo,
+    };
+    escreverFicheiro(noticia);
+    estado.historias.push({ id: noticia.id, titulo: noticia.titulo, categoria: noticia.categoria, data: noticia.data });
+    historia.feita = noticia.id;
+    guardarProgresso();
+    escritas++;
+    console.log(`   ✍  [${dia}] ${noticia.titulo}`);
+  } catch (erro) {
+    console.warn(`   ⚠ Erro em "${historia.titulo}": ${erro.message}`);
+  }
+}
+
+let proxima = 0;
+await Promise.all(
+  Array.from({ length: PARALELO }, async () => {
+    while (proxima < fila.length) await processar(fila[proxima++]);
+  }),
+);
+if (fila.length) console.log(`
+📰 ${fila.length} acontecimentos processados`);
 
 if (!SO_LISTAR) guardarEstado(estado);
 console.log(`\n✅ ${escritas} notícia(s) escritas em src/content/noticias`);

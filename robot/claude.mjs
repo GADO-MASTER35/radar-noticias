@@ -84,19 +84,41 @@ const Selecao = z.object({
       categoria: z.enum(categorias),
       importancia: z.number().int().describe("1 a 10"),
       ids: z.array(z.string()).describe("ids das manchetes sobre este acontecimento"),
+      repete: z
+        .string()
+        .nullable()
+        .describe("Se for o mesmo acontecimento de um título em <ja_escolhidas> (mesmo jogo, mesma decisão, mesmo relatório), copia esse título; senão null"),
     }),
   ),
 });
 
+// Palavras com significado (sem acentos, 4+ letras), para detetar o mesmo acontecimento com títulos diferentes.
+const PALAVRAS_VAZIAS = new Set(["para", "com", "sobre", "apos", "entre", "contra", "pela", "pelo", "mais", "novo", "nova", "governo", "portugal", "vence", "anuncia"]);
+const palavrasChave = (titulo) =>
+  new Set(
+    titulo
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((p) => p.length >= 4 && !PALAVRAS_VAZIAS.has(p)),
+  );
+const mesmoAcontecimento = (a, b) => {
+  const [pa, pb] = [palavrasChave(a), palavrasChave(b)];
+  const comuns = [...pa].filter((p) => pb.has(p)).length;
+  return comuns >= 3 || comuns / Math.min(pa.size, pb.size) >= 0.6;
+};
+
 // Modo semana: escolhe os acontecimentos mais importantes de um dia a partir das manchetes.
 export async function selecionarDia({ dia, itens, quantidade, jaEscolhidas }) {
+  const candidatos = quantidade + 5; // pede extra: os repetidos são descartados
   const dados = itens.map(({ id, fonte, categoriaSugerida, titulo }) => ({ id, fonte, categoriaSugerida, titulo }));
   const resposta = await client.messages.parse({
     ...opcoes(robot.claude.modelo_triagem, robot.claude.esforco_triagem, zodOutputFormat(Selecao)),
     max_tokens: 16000,
     system:
       `${linhaEditorial}\n\n## Tarefa: seleção do dia\n` +
-      `Estas são manchetes publicadas no dia ${dia}. Escolhe os ${quantidade} acontecimentos mais importantes para leitores em Portugal, ` +
+      `Estas são manchetes publicadas no dia ${dia}. Escolhe os ${candidatos} acontecimentos mais importantes para leitores em Portugal, ` +
       `agrupando manchetes de fontes diferentes sobre o mesmo acontecimento. Garante variedade de secções e inclui sempre futebol quando houver notícias relevantes. ` +
       `Não repitas acontecimentos de <ja_escolhidas>, a não ser que haja um desenvolvimento novo importante. Ordena do mais para o menos importante.\n${AVISO_FONTES}`,
     messages: [
@@ -109,7 +131,13 @@ export async function selecionarDia({ dia, itens, quantidade, jaEscolhidas }) {
   if (resposta.stop_reason === "refusal" || !resposta.parsed_output) {
     throw new Error(`Seleção sem resultado (stop_reason: ${resposta.stop_reason})`);
   }
-  return resposta.parsed_output.historias.slice(0, quantidade);
+  const novas = [];
+  for (const h of resposta.parsed_output.historias) {
+    const repetida = h.repete ?? [...jaEscolhidas, ...novas.map((n) => n.titulo)].find((t) => mesmoAcontecimento(h.titulo, t));
+    if (repetida) console.log(`   ↷ Repetida, ignorada: ${h.titulo}  (= ${repetida})`);
+    else novas.push(h);
+  }
+  return novas.slice(0, quantidade);
 }
 
 // Alguns sites bloqueiam o leitor web da Anthropic (ex.: bbc.com); a API recusa o pedido inteiro se estiverem na lista.
